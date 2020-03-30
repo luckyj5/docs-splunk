@@ -2,6 +2,26 @@
 title: Splunk Firehose Nozzle for VMware Tanzu Release Notes
 owner: Partners
 ---
+### v2.0.0
+**Release Date:** March 31st, 2020
+
+Features:
+
+* Update nozzle to use V2 api via RLP gateway mechanism.
+* Updated authentication client.
+* Clean up un-supported CF eventtypes in V2(HttpStart/ HttpStop) and firehose web-socket implementation.
+* Added V2 adapter for v2-v1 mapping.
+* Updated vendor libs per v2 update.
+* Updated tile with latest stemcell i.e, 621.
+* Updated logging to include retry counter during HEC retries. 
+* Updated ci to include functional tests.
+
+Features:
+
+* Updated authentication mechanism to use Client ID and Client secret. See [Configuration](installing.html#configure) for more information.
+* Updated uaago library.
+* Includes minor bug fixes.
+
 
 ### v1.1.2
 **Release Date:** August 7th, 2019
