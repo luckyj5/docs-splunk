@@ -1,151 +1,92 @@
 ---
-title: Troubleshooting Splunk Firehose Nozzle for VMware Tanzu
+title: Using Splunk Firehose Nozzle for VMware Tanzu
 owner: Partners
 ---
 
-This topic describes how to troubleshoot Splunk Firehose Nozzle for VMware Tanzu.
+This topic describes how to use Splunk Firehose Nozzle for VMware Tanzu.
 
-## <a id='walkthrough'></a> Troubleshooting Walkthrough
+After installing and configuring Splunk Firehose Nozzle for VMware Tanzu, VMware Tanzu operators can navigate to the URL of their existing Splunk Enterprise deployment to immediately search, report,
+visualize, and alert on VMware Tanzu Firehose data.
 
-### 1. I can't find my data!
+The following assumes basic familiarity on how to run searches, save reports, and create dashboards in Splunk Enterprise.
+If you are new to Splunk, start with the [Search Tutorial](https://docs.splunk.com/Documentation/Splunk/latest/SearchTutorial/WelcometotheSearchTutorial) which shows you how to search data and create simple dashboards.
 
-  Are you searching for events and not finding them or looking at a dashboard and seeing "No result found"? Check Splunk Nozzle app logs.
+The following is an example Splunk dashboard for operational intelligence.
 
-  To view the nozzle's logs running on VMware Tanzu do the following:
+![Report Example: Sample Ops Dashboard](images/dashboard-sample.png)
 
-<ol>
-  <li>Log in as an admin via the CLI.</li>
-  <li>Target the org created by the tile.<br/>
-  <pre class="terminal">cf target -o SPLUNK-NOZZLE-ORG</pre>
-  </li>
-  <li>View the recent app Splunk Nozzle logs (the version number installed by the tile will vary).<br/>
-  <pre class="terminal">cf logs --recent splunk-firehoze-nozzle-1.0.0</pre>
-  </li>
-  <li>Alternatively, you can stream the app logs as they're emitted.<br/>
-  <pre class="terminal">cf logs splunk-firehose-nozzle-1.0.0</pre>
-  </li>
-</ol>
+<%#
+For a starter sample dashboard for operational intelligence, you can use community-supported
+[Splunk Add-on for Cloud Foundry](#add-on) which includes many pre-built panels and reports to
+help you quickly build your own custom dashboards to monitor the health of your foundation and the performance of your apps.
+%>
 
-Here are a few common errors and possible resolutions:
+##<a id='search'></a>Search Firehose Data
 
-#### Splunk configuration related errors:
+The Firehose event types forwarded by the Splunk Firehose Nozzle are assigned the following Splunk sourcetypes by default:
 
-<pre class="terminal">{"timestamp":"<time>","source":"splunk-nozzle-logger","message":"splunk-nozzle-logger.Unable to talk to Splunk","log_level":2,"data":{"error":"Post http://localhost:8088/services/collector: read tcp 10.0.0.0:62931-\u003elocalhost:8088: read: connection reset by peer"}}</pre>
+  Firehose event type | Splunk sourcetype
+  --- | ---
+  Error | `cf:error`
+  HttpStartStop | `cf:httpstartstop`
+  LogMessage | `cf:logmessage`
+  ContainerMetric | `cf:containermetric`
+  CounterEvent | `cf:counterevent`
+  ValueMetric | `cf:valuemetric`
 
-This error usually occurs when SSL is enabled on the Splunk HEC endpoint. Confirm that you're using https' in the Splunk HEC URL.
+In addition, logs from the Nozzle are of sourcetype `cf:splunknozzle`.
 
+You can use these Splunk sourcetypes to search and retrieve the relevant events from the index,
+use statistical commands to calculate metrics and generate reports, search for specific conditions within a rolling time window,
+identify patterns in your data, predict future trends, and so on. Here are some sample search commands that you can use:
 
-<pre class="terminal">{"timestamp":"<time>","source":"splunk-nozzle-logger","message":"splunk-nozzle-logger.Unable to talk to Splunk","log_level":2,"data":{"error":"Non-ok response code [400] from splunk: {\"text\":\"Incorrect index\",\"code\":7,\"invalid-event-number\":1}"}}</pre>
+  * Search for any errors from your deployment:
 
-This usually means the index value specified in the configuration doesn't exist on Splunk Host. Confirm that you're using the correct Splunk index value.
+    `sourcetype=cf:error`
 
-  
-<pre class="terminal">{"timestamp":"<time>","source":"splunk-nozzle-logger","message":"splunk-nozzle-logger.Unable to talk to Splunk","log_level":2,"data":{"error":"Non-ok response code [403] from splunk: {\"text\":\"Invalid token\",\"code\":4}"}}</pre>
+  * Search for router bad gateways:
 
-This can occur when the Splunk HEC Token value is invalid. Confirm that you're using a valid token.
+    `sourcetype=cf:counterevent name="bad_gateways"`
 
-<pre class="terminal">{"timestamp":"<time>","source":"splunk-nozzle-logger","message":"splunk-nozzle-logger.Unable to talk to Splunk","log_level":2,"data":{"error":"Post https://localhost:8088/services/collector: x509: cannot validate certificate for localhost because it doesn't contain any IP SANs"}}</pre>
+  * Search for metrics of remaining cell disk capacity or memory:
 
-This usually means that there was no valid SSL certificate found. Confirm that you're using a valid SSL certificate for the Splunk server, or set 'Skip SSL Validation' to `true` under Splunk settings.
+    `sourcetype=cf:valuemetric name=CapacityRemainingDisk`
+    `sourcetype=cf:valuemetric name=CapacityRemainingMemory`
 
-<p class="note"><strong>Note:</strong>Disabling SSL validation is not recommended for production environments.</p>
+You must have access to the index specified to receive these Firehose events.
+You might need to explicitly specify the index in your search if that index is not part of the indexes searched by default for your Splunk role.
+These searches can be saved as reports and used to power dashboard panels, as shown in the next section.
 
+##<a id='report'></a>Report and Visualize Firehose Data
 
-<pre class="terminal">{"timestamp":"<time>","source":"splunk-nozzle-logger","message":"splunk-nozzle-logger.Unable to talk to Splunk","log_level":2,"data":{"error":"Post https://localhost:8088/services/collector: dial tcp localhost:8088: getsockopt: connection refused"}}</pre>
+To monitor your environment operational health, you can build on these same searches to generate reports and visualizations. For example:
 
-This error can occur when the Splunk server is offline or when the Splunk HEC URL is not valid. Confirm that both the Splunk server is running and that you're using a valid URL. 
+  * Report available memory per cell:
 
-#### Cloud Foundry configuration related errors:
+    ```
+    sourcetype=cf:valuemetric name=CapacityRemainingMemory
+      | eval valueGB=round(case(unit=="MiB", value/1024, unit=="KiB", value/(1024*1024), unit=="GiB", value),2)
+      | stats min(valueGB) as mem by job_instance
+      | rename mem as "Available Memory (GB)", job_instance as "Job Instance"
+    ```
+    ![Report Example: Available mem per cell](images/report-available-memory-per-cell.png)
 
-<pre class="terminal">{"timestamp":"<time>","source":"splunk-nozzle-logger","message":"splunk-nozzle-logger.Failed to run splunk-firehose-nozzle","log_level":2,"data":{"error":"Error getting token: oauth2: cannot fetch token: 401 Unauthorized\nResponse: {\"error\":\"unauthorized\",\"error_description\":\"Bad credentials\"}"}}</pre>
+  * Report available memory per cell over time:
 
-This error can occur when the credentials provided for CF environment are invalid. Confirm that the API User and API Password each have access to the CF environment. 
+    ```
+    sourcetype=cf:valuemetric name=CapacityRemainingMemory
+      | eval valueGB=round(case(unit=="MiB", value/1024, unit=="KiB", value/(1024*1024), unit=="GiB", value),2)
+      | timechart min(valueGB) by job_instance
+    ```
+    ![Report Example: Available mem per cell over time](images/report-available-memory-per-cell-over-time.png)
 
+  * Report number of routes registered with trend indicator:
 
-<pre class="terminal">{"timestamp":"<time>","source":"splunk-nozzle-logger","message":"splunk-nozzle-logger.Failed to run splunk-firehose-nozzle","log_level":2,"data":{"error":"Could not get api /v2/info: Get https://api.cfendpoint.com/v2/info: x509: certificate signed by unknown authority"}}</pre>
+    ```
+    sourcetype=cf:valuemetric name=RoutesTotal
+      | timechart avg(value) as numRoutes
+    ```
+    ![Report Example: Total routes with trend](images/report-routes-total-with-trend.png)
 
-This means that no valid SSL certificate was found. To remediate this error, provide a valid SSL certificate for Cloud Foundry or set 'Skip SSL Validation' to true under Cloud Foundry Settings.
-
-<p class="note"><strong>Note:</strong>Disabling SSL validation is not recommended for production environments.</p>
-
-The following troubleshooting tips assume you have access to Splunk to run basic searches against index `_internal` and the user-specified index for Firehose events.
-
-### 2. Ensure Splunk Nozzle is forwarding events from the Firehose:
-
-Search app logs of the Nozzle to confirm correct behavior:
-
-<pre class="terminal">
-sourcetype="cf:splunknozzle"
-</pre>
-
-A correct setup logs a start message with configuration parameters of the Nozzle logged as a JSON object, for example:
-
-<pre class="terminal">
-  data:	{
-     add-app-info: true
-     api-endpoint: https://api.endpoint.com
-     app-cache-ttl: 0
-     app-limits: 0
-     batch-size: 1000
-     boltdb-path: cache.db
-     branch: null
-     buildos: null
-     commit: null
-     debug:	 false
-     extra-fields:
-     flush-interval: 5000000000
-     hec-workers: 8
-     ignore-missing-apps: true
-     job-host:
-     job-index: -1
-     job-name: splunk-nozzle
-     keep-alive: 25000000000
-     missing-app-cache-ttl:	 0
-     queue-size: 10000
-     retries: 2
-     skip-ssl: true
-     splunk-host: http://localhost:8088
-     splunk-index: atomic
-     splunk-version: 6.6
-     subscription-id: splunk-firehose
-     trace-logging: true
-     version:
-     wanted-events: ValueMetric,CounterEvent,Error,LogMessage,HttpStartStop,ContainerMetric
-  }
-  ip: 10.0.0.0
-  log_level: 1
-  logger_source: splunk-nozzle-logger
-  message: splunk-nozzle-logger.Running splunk-firehose-nozzle with following configuration variables
-  origin: splunk_nozzle
-</pre>
-
-  Search app logs of the Nozzle for any errors:
-<pre class="terminal">
-sourcetype="cf:splunknozzle" data.error=*
-</pre>
-
-Errors are logged with corresponding message and stacktrace.
-
-### 3. Check for dropped events due to HTTP Event Collector availability:
-
-As the Splunk Firehose Nozzle sends data to Splunk via HTTPS using the HTTP Event Collector, it is also susceptible to any network issues across the network path from point to point. Run the following search to determine if Splunk has indexed any events indicating issues with the HEC Endpoint.
-
-<pre class="terminal">
-  sourcetype="cf:splunknozzle" "dropping events"
-</pre>
-
-### 4. Check for data loss inside the Splunk Firehose Nozzle:
-
-If "Event Tracing" is enabled, extra metadata will be attached to events. This allows searches to calculate the percentage of data loss inside the Splunk Firehose Nozzle, if applicable.
-
-Each instance of the Splunk Firehose Nozzle will run with a randomly generated UUID. The query below will display the message success rate for each UUID (Please update the index value based on your nozzle configuration).
-
-<pre class="terminal">
-index=main | stats count as total_events, min(nozzle-event-counter) as min_number, max(nozzle-event-counter) as max_number by uuid | eval event_number =  max_number - min_number | eval success_percentage = total_events/event_number*100 | stats max(success_percentage) by uuid
-</pre>
-
-### 4. Additional Resources 
-
-Checkout [Troubleshoot HTTP Event Collector](https://docs.splunk.com/Documentation/Splunk/7.2.6/Data/TroubleshootHTTPEventCollector) for troubleshooting issues related to HTTP Event Collector.
-
-Checkout [Splunk Answers](https://answers.splunk.com/). Using the forum can save you time!
+For more information about searching and reporting with Splunk,
+see [Splunk Docs](https://docs.splunk.com/Documentation/Splunk)
