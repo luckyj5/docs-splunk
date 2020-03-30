@@ -66,10 +66,9 @@ applications:
   timeout: 180
   buildpack: https://github.com/SUSE/stratos-buildpack
   health-check-type: port
-  services:
-  - splunk-index
   env:
     SPLUNK_INDEX: testing_index
+    <note>Verify SPLUNK_INDEX exists on your Splunk platform deployment. Otherwise data will be lost.</note>
 ```
 
 1. Index routing via Splunk configuration
