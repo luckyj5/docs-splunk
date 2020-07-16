@@ -13,7 +13,7 @@ This topic describes how to install and configure Splunk Firehose Nozzle for VMw
 
 ###Steps
 
-1. Download the Splunk file from [Pivotal Network](https://network.pivotal.io/products/splunk-nozzle/).
+1. Download the Splunk Firehose Nozzle file from [Pivotal Network](https://network.pivotal.io/products/splunk-nozzle/).
 
 1. Navigate to the Ops Manager Installation Dashboard and click **Import a Product** to upload the product file.
 
@@ -59,7 +59,7 @@ to install Splunk Firehose Nozzle for VMware Tanzu tile.
     Complete the fields as follows:
     * **API Endpoint**: Cloud Foundry API endpoint.
     * **Client ID/ Client Secret**: UAA client-id and client-secret.
-        The client needs scopes `cloud_controller.admin_read_only` and `doppler.firehose` and grant tpyes `client_credentials` and `refresh_token`.        
+        The client needs scopes `cloud_controller.admin_read_only` and `doppler.firehose` and grant tpyes `client_credentials` and `refresh_token`.
         Use the [uaac](https://github.com/cloudfoundry/cf-uaac) tool to create the appropriate client. The `uaac` commands to add a client are as follows:
         <ol>
           <li><code>uaac target https://uaa.[system domain url]</code></li>
@@ -110,7 +110,7 @@ to install Splunk Firehose Nozzle for VMware Tanzu tile.
   * **App Cache Invalidate TTL**: Time interval (in seconds) between refreshing the app info local cache.
       Set to 0 to only populate the cache during startup or restart of the nozzle.
   * **Org Space Cache Invalidate TTL**: Time interval (in seconds) between refreshing the org and space cache.
-  * **Ignore Missing App**: If the application is missing, then stop repeatedly querying application info from Cloud Foundry.   
+  * **Ignore Missing App**: If the application is missing, then stop repeatedly querying application info from Cloud Foundry.
   * **App Limits**: The number of apps for which metadata is gathered when refreshing the app metadata cache (order based on app creation date).
       Set to 0 to remove limit.
   * **Nozzle Memory**: Configure memory for Splunk Firehose Nozzle application in MB.
