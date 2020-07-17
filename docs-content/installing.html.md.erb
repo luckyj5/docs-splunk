@@ -3,13 +3,13 @@ title: Installing and Configuring Splunk Firehose Nozzle for VMware Tanzu
 owner: Partners
 ---
 
-This topic describes how to install and configure Splunk Firehose Nozzle for VMware Tanzu.
+This topic describes how to install and configure the Splunk Firehose Nozzle for VMware Tanzu.
 
-##<a id='install'></a> Install and Configure Splunk Firehose Nozzle for VMware Tanzu
+##<a id='install'></a> Install and Configure the Splunk Firehose Nozzle for VMware Tanzu
 
 ###Prerequisites
 + For information about the Ops Manager Installation Dashboard, see [Using Ops Manager](http://docs.pivotal.io/pivotalcf/1-11/customizing/).
-+ There is no upgrade path from the previous release of Splunk Nozzle for VMware Tanzu (Beta). Install this version to an environment without the Splunk Firehose Nozzle for VMware Tanzu (Beta).
++ There is no upgrade path from the previous release of the Splunk Nozzle for VMware Tanzu (Beta). Install this version to an environment without the Splunk Firehose Nozzle for VMware Tanzu (Beta).
 
 ###Steps
 
@@ -84,25 +84,25 @@ to install Splunk Firehose Nozzle for VMware Tanzu tile.
 4. Click **Advanced**.
     ![Report Example: Cloud Foundry Settings View](images/tile-advanced-config-settings.png)
     Complete the fields as follows:
-    * **Scale Out Nozzle**: Scale out Splunk Nozzle. Splunk recommends running two or more nozzles for high availability.
+    * **Scale Out Nozzle**: Scale out the Splunk Firehose Nozzle for VMware Tanzu. The best practice is running two or more nozzles for high availability.
   * **Firehose Subscription ID**: The Loggregator does a round-robin of events across connections
-  having the same ID. An operator would only need to change this if some other connection
-  is also using the default value.
+  that have the same ID. An operator only needs to change this if another connection
+  uses the same default value.
   * **Additional Fields**: Arbitrary set of key:value pairs in the form `key1:value1,key2:value2,key3:value3` that do not occur in event payload itself.
   These fields are indexed with every event payload, and are used as metadata for indexing and searching.
-  One situation in which this might be useful is differentiating logs from multiple foundations going into the same Splunk Enterprise index.
+  One situation in which this might be useful is differentiating logs from multiple foundations going into the same Splunk platform index.
   * **Add App Information**: Enriches raw events with app metadata fields - app name, org name, org GUID, space name, space GUID.
   When configured, the nozzle calls back to the Cloud Foundry API and queries events that
   have an app GUID to add additional information. This causes a one-time load increase on the API machines proportional the number of running apps,
   because each Nozzle populates a cache of app metadata.
   * **Enable Event Tracing**: Enables event trace logging.
-      Splunk events now contain a UUID, Splunk Nozzle Event Counts, and a Subscription-ID for Splunk correlation searches.
+      Splunk events contain a UUID, Splunk Nozzle Event Counts, and a Subscription-ID for Splunk correlation searches.
   * **Monitor Queue Pressure**: Time interval for monitoring memory queue pressure to help with back-pressure insights.
   * **HEC Retries**: The retry count for sending events to the Splunk platform.
       Events not successfully sent after this number of retries will be dropped, causing data loss.
   * **RLP Gateway Retries**: The retry count for connecting to RLP gateway.
-  * **HEC Batch Size**: The number of events per batch sent to Splunk HTTP Event Collector.
-  * **HEC Workers**: The number of concurrent workers sending data to Splunk HTTP Event Collector.
+  * **HEC Batch Size**: The number of events per batch sent to the Splunk HTTP Event Collector.
+  * **HEC Workers**: The number of concurrent workers sending data to the Splunk HTTP Event Collector.
       Scale this number to your Splunk platform data collection capacity accordingly.
   * **Consumer Queue Size**: The internal consumer queue buffer size. Events will be sent to your Splunk platform after queue is full.
   * **Flush Interval**: Time interval (in seconds) for flushing queue to the Splunk platform regardless of Consumer Queue Size.
